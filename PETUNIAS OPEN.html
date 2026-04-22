@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PETUNIAS OPEN — Tennis Player Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ── Responsive + Extra ── */
+  .two-col-form { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+
+  /* Responsive overrides */
+  @media(max-width:900px) {
+    .two-col-form { grid-template-columns:1fr !important; }
+  }
+
+  @media(max-width:768px) {
+    main { padding:20px 14px !important; }
+    header { padding:14px 14px 12px !important; }
+    /* hide desktop nav, show hamburger */
+    .nav-desktop { display:none !important; }
+    .hamburger   { display:flex !important; align-items:center; justify-content:center; }
+    /* stack all 2-col grids */
+    [style*="grid-template-columns: 1fr 1fr"],
+    [style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+    /* bracket scrollable */
+    .bracket-scroll { overflow-x:auto; }
+  }
+
+  @media(min-width:769px) {
+    .nav-mobile  { display:none !important; }
+    .hamburger   { display:none !important; }
+  }
+
+  @media(max-width:520px) {
+    .btn-neon, .btn-outline { padding:9px 18px !important; font-size:11px !important; letter-spacing:1px !important; }
+    /* single col for all grids */
+    [style*="grid-template-columns"] { grid-template-columns:1fr !important; }
+  }
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --neon: #00ff97;
+    --bg: #121212;
+    --surface-1: #181818;
+    --surface-2: #1f1f1f;
+    --surface-3: #252525;
+    --text: #ffffff;
+    --text-muted: #b3b3b3;
+    --text-soft: #cbcbcb;
+    --border: #4d4d4d;
+    --border-soft: rgba(255,255,255,0.06);
+    --shadow-card: 0 8px 8px rgba(0,0,0,0.3);
+    --shadow-dialog: 0 8px 24px rgba(0,0,0,0.5);
+    --radius-card: 8px;
+    --radius-pill: 9999px;
+    --radius-input: 500px;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar — Spotify-style */
+  ::-webkit-scrollbar { width: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 6px; border: 3px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #7c7c7c; }
+
+  /* Card — opaque dark surface with blur for layered overlays */
+  .glass-card {
+    background: rgba(24,24,24,0.92);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Label — green accent, still Audiowide */
+  .label-neon {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    font-weight: 700;
+    color: #00ff97;
+    font-family: 'Audiowide', monospace;
+    margin-bottom: 8px;
+  }
+
+  /* Inputs — pill with inset tactile border */
+  .inp {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-input);
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: box-shadow .15s, background .15s;
+    box-shadow: rgba(124,124,124,0.35) 0 0 0 1px inset;
+  }
+  .inp:focus {
+    background: var(--surface-3);
+    box-shadow: #00ff97 0 0 0 1.5px inset;
+  }
+  .inp option { background: var(--surface-2); color: #fff; }
+  textarea.inp { border-radius: 10px; padding: 12px 16px; }
+  select.inp { cursor: pointer; }
+  input[type="date"].inp { font-family: inherit; }
+
+  /* Slider */
+  .slider {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #4d4d4d;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    accent-color: #00ff97;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #00ff97;
+    cursor: pointer;
+    border: none;
+  }
+  .slider::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #00ff97;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Primary green pill — CTA (functional use only) */
+  .btn-neon {
+    padding: 10px 28px;
+    background: #00ff97;
+    color: #000;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-family: 'Audiowide', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .btn-neon:hover { filter: brightness(1.08); transform: scale(1.03); }
+  .btn-neon:active { transform: scale(0.97); }
+
+  /* Outlined pill — secondary */
+  .btn-outline {
+    padding: 10px 28px;
+    background: transparent;
+    color: #fff;
+    border: 1px solid #7c7c7c;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-family: 'Audiowide', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    cursor: pointer;
+    transition: all .12s ease;
+  }
+  .btn-outline:hover { border-color: #fff; background: rgba(255,255,255,0.05); transform: scale(1.03); }
+
+  /* Category pills (filters) */
+  .cat-btn {
+    padding: 7px 16px;
+    border: 1px solid transparent;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-family: 'Audiowide', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .12s ease;
+    letter-spacing: 1.4px;
+  }
+  .cat-btn:hover { background: #2a2a2a; color: #fff; }
+  .cat-btn.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+
+  /* Nav tabs — pill */
+  .nav-tab {
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-family: 'Audiowide', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    cursor: pointer;
+    transition: all .12s ease;
+    border: 1px solid transparent;
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+  .nav-tab:hover:not(:disabled) { background: #2a2a2a; color: #fff; }
+  .nav-tab.active {
+    background: #00ff97;
+    color: #000;
+    border-color: #00ff97;
+  }
+  .nav-tab:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Dialog / modal elevation */
+  .dialog-elev { box-shadow: var(--shadow-dialog); }
+
+  /* Scan line overlay — disabled for Spotify aesthetic */
+  .scanlines { display: none; }
+
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr !important; }
+    .five-col { grid-template-columns: repeat(3,1fr) !important; }
+  }
+  
+  /* Status indicator for Supabase connection */
+  .db-status {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: 'Audiowide', monospace;
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+  .db-status.online {
+    background: rgba(0, 255, 151, 0.15);
+    color: #00ff97;
+    border: 1px solid rgba(0, 255, 151, 0.3);
+  }
+  .db-status.offline {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff5050;
+    border: 1px solid rgba(255, 80, 80, 0.3);
+  }
+  .db-status.syncing {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+</style>
+<template id="__bundler_thumbnail" data-bg-color="#070b18">
+  <svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="260" fill="#070b18"/>
+    <circle cx="200" cy="130" r="80" fill="none" stroke="#00ff97" stroke-width="3" opacity="0.3"/>
+    <circle cx="200" cy="130" r="60" fill="none" stroke="#00ff97" stroke-width="2" opacity="0.5"/>
+    <g transform="translate(170,100) scale(0.32)">
+      <polygon fill="#00ff97" points="103.34 86.54 112.1 74.58 180.44 62.6 190.86 78.82 168.13 143.76 163.35 124.71 103.34 86.54"/>
+      <polygon fill="#00ff97" points="108.61 105.73 122.69 110.37 155.21 171.65 142.99 186.58 74.22 185.03 90.85 174.6 108.61 105.73"/>
+      <polygon fill="#00ff97" points="91.99 116.67 91.93 131.5 43.69 181.35 25.72 174.35 5.94 108.47 21 121.06 91.99 116.67"/>
+      <polygon fill="#00ff97" points="76.44 104.24 62.32 108.77 0 78.3 1.1 59.04 57.66 19.87 50.34 38.09 76.44 104.24"/>
+      <polygon fill="#00ff97" points="83.46 85.62 74.79 73.59 84.51 4.9 103.17 0 157.9 41.68 138.31 40.35 83.46 85.62"/>
+    </g>
+    <text x="200" y="210" text-anchor="middle" fill="#00ff97" font-size="18" font-family="monospace" letter-spacing="4" font-weight="bold">PETUNIAS OPEN</text>
+    <text x="200" y="230" text-anchor="middle" fill="rgba(0,255,151,0.4)" font-size="9" font-family="monospace" letter-spacing="3">TENNIS PLAYER ANALYSIS</text>
+  </svg>
+</template>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div style="position:fixed;inset:0;z-index:-1;overflow:hidden;">
+  <img src="assets/bg.png" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.07;"/>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at top, rgba(0,255,151,0.04) 0%, transparent 60%), linear-gradient(180deg,#070b18 0%,rgba(7,11,24,0.9) 100%);"></div>
+</div>
+
+<div id="root" style="position:relative;z-index:1;"></div>
+
+<div id="db-status" class="db-status offline" style="display: none;">● Offline</div>
+
+<script src="js/utils.js"></script>
+<script src="js/eloHelpers.js"></script>
+<script src="js/trainingHelpers.js"></script>
+<script src="js/medalsHelpers.js"></script>
+<script src="js/evaluationHelpers.js"></script>
+<script src="js/tournamentHelpers.js"></script>
+<script src="js/dashboardHelpers.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+/**
+ * SUPABASE CONFIGURATION
+ * ======================
+ * * IMPORTANTE: Configura estas políticas RLS en tu dashboard de Supabase:
+ * * 1. Ve a Authentication → Policies
+ * 2. Crea políticas para la tabla 'players':
+ * - INSERT: Enable insert for all users (anon) o con autenticación
+ * - SELECT: Enable select for all users
+ * - UPDATE: Enable update for authenticated users only
+ * - DELETE: Enable delete for authenticated users only
+ * * Ejemplo de política INSERT (para desarrollo):
+ * CREATE POLICY "Allow anonymous inserts" ON players
+ * FOR INSERT TO anon WITH CHECK (true);
+ * * CREATE POLICY "Allow anonymous select" ON players
+ * FOR SELECT TO anon USING (true);
+ */
+
+// Configuración de Supabase
+const SUPABASE_URL = "https://ssrfkclvzvjzipunpalh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcmZrY2x2enZqemlwdW5wYWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTI5NDksImV4cCI6MjA5MjM2ODk0OX0.JibvsRZB7hhfungMorwVF8Zom7_sudlVXTksAVQLsOo";
+
+// Variable global para el cliente
+let db = null;
+let dbStatus = 'offline';
+
+// Inicializar cliente Supabase de forma segura
+function initSupabase() {
+  try {
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.warn('Supabase library not loaded yet');
+      return false;
+    }
+    
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
+      }
+    });
+    
+    console.log("✅ Supabase client initialized");
+    return true;
+  } catch (err) {
+    console.error("❌ Failed to initialize Supabase:", err);
+    db = null;
+    return false;
+  }
+}
+
+// Verificar conexión con Supabase
+async function checkSupabaseConnection() {
+  if (!db) {
+    updateDbStatus('offline', '● No DB');
+    return false;
+  }
+  
+  try {
+    const { data, error } = await db.from('players').select('count').limit(1);
+    
+    if (error) {
+      console.warn("⚠️ Supabase connection check failed:", error.message);
+      updateDbStatus('offline', '● Error');
+      return false;
+    }
+    
+    console.log("✅ Supabase connected successfully");
+    updateDbStatus('online', '● Online');
+    return true;
+  } catch (err) {
+    console.error("❌ Supabase connection error:", err);
+    updateDbStatus('offline', '● Error');
+    return false;
+  }
+}
+
+// Actualizar indicador visual
+function updateDbStatus(status, text) {
+  dbStatus = status;
+  const el = document.getElementById('db-status');
+  if (!el) return;
+  
+  el.style.display = 'block';
+  el.className = `db-status ${status}`;
+  el.textContent = text;
+}
+
+// ==================== DATABASE OPERATIONS ====================
+
+// Obtener jugadores desde Supabase o localStorage
+async function getPlayers() {
+  // Intentar Supabase primero
+  if (db && dbStatus === 'online') {
+    try {
+      const { data, error } = await db
+        .from('players')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        console.log(`📥 Loaded ${data.length} players from Supabase`);
+        // Sincronizar con localStorage
+        localStorage.setItem('petunias-players', JSON.stringify(data));
+        return data.map(ensurePlayerRating);
+      }
+    } catch (err) {
+      console.warn("⚠️ Failed to load from Supabase, falling back to localStorage:", err.message);
+    }
+  }
+  
+  // Fallback a localStorage
+  try {
+    const raw = JSON.parse(localStorage.getItem('petunias-players')) || [];
+    console.log(`📦 Loaded ${raw.length} players from localStorage`);
+    return raw.map(ensurePlayerRating);
+  } catch {
+    return [];
+  }
+}
+
+// Guardar jugador en Supabase y localStorage
+async function savePlayer(player) {
+  const playerWithRating = ensurePlayerRating({
+    ...player,
+    id: player.id || Date.now(),
+    created_at: new Date().toISOString()
+  });
+  
+  // Siempre guardar en localStorage primero (garantiza persistencia)
+  const existing = JSON.parse(localStorage.getItem('petunias-players')) || [];
+  const updated = [playerWithRating, ...existing];
+  localStorage.setItem('petunias-players', JSON.stringify(updated));
+  
+  // Intentar sincronizar con Supabase
+  if (db && dbStatus === 'online') {
+    try {
+      updateDbStatus('syncing', '⟳ Syncing...');
+      
+      const { data, error } = await db
+        .from('players')
+        .insert([{
+          id: playerWithRating.id,
+          name: playerWithRating.nombre || playerWithRating.name,
+          age: playerWithRating.edad || playerWithRating.age || 0,
+          gender: playerWithRating.genero || playerWithRating.gender || 'M',
+          category: playerWithRating.categoria || 'C',
+          rating: playerWithRating.rating || 1500,
+          wins: playerWithRating.wins || 0,
+          losses: playerWithRating.losses || 0,
+          history: JSON.stringify(playerWithRating.history || []),
+          created_at: playerWithRating.created_at
+        }])
+        .select();
+      
+      if (error) throw error;
+      
+      console.log("✅ Player saved to Supabase:", data);
+      updateDbStatus('online', '● Online');
+      return { success: true, data: data?.[0] || playerWithRating, source: 'supabase' };
+    } catch (err) {
+      console.warn("⚠️ Failed to save to Supabase, saved locally:", err.message);
+      updateDbStatus('offline', '● Local Only');
+      return { success: true, data: playerWithRating, source: 'local' };
+    }
+  }
+  
+  return { success: true, data: playerWithRating, source: 'local' };
+}
+
+// Eliminar jugador
+async function deletePlayerFromDB(id) {
+  // Eliminar de localStorage
+  const existing = JSON.parse(localStorage.getItem('petunias-players')) || [];
+  const updated = existing.filter(p => p.id !== id);
+  localStorage.setItem('petunias-players', JSON.stringify(updated));
+  
+  // Intentar eliminar de Supabase
+  if (db && dbStatus === 'online') {
+    try {
+      const { error } = await db.from('players').delete().eq('id', id);
+      if (error) throw error;
+      console.log("✅ Player deleted from Supabase");
+    } catch (err) {
+      console.warn("⚠️ Failed to delete from Supabase:", err.message);
+    }
+  }
+  
+  return { success: true };
+}
+
+// Sincronizar todos los datos locales con Supabase
+async function syncWithSupabase() {
+  if (!db || dbStatus !== 'online') {
+    console.log("⏸️ Cannot sync: Supabase not available");
+    return { synced: 0, failed: 0 };
+  }
+  
+  const localPlayers = JSON.parse(localStorage.getItem('petunias-players')) || [];
+  if (localPlayers.length === 0) return { synced: 0, failed: 0 };
+  
+  updateDbStatus('syncing', '⟳ Syncing...');
+  let synced = 0;
+  let failed = 0;
+  
+  for (const player of localPlayers) {
+    try {
+      const { error } = await db
+        .from('players')
+        .upsert({
+          id: player.id,
+          name: player.nombre || player.name,
+          age: player.edad || player.age || 0,
+          gender: player.genero || player.gender || 'M',
+          category: player.categoria || 'C',
+          rating: player.rating || 1500,
+          wins: player.wins || 0,
+          losses: player.losses || 0,
+          history: JSON.stringify(player.history || []),
+          created_at: player.created_at || new Date().toISOString()
+        }, { onConflict: 'id' });
+      
+      if (error) throw error;
+      synced++;
+    } catch (err) {
+      console.warn(`Failed to sync player ${player.id}:`, err.message);
+      failed++;
+    }
+  }
+  
+  updateDbStatus('online', '● Online');
+  console.log(`🔄 Sync complete: ${synced} synced, ${failed} failed`);
+  return { synced, failed };
+}
+
+// Verificar conexión con Supabase e iniciar el Tiempo Real
+async function checkSupabaseConnection() {
+  if (!db) {
+    updateDbStatus('offline', '● No DB');
+    return false;
+  }
+  
+  try {
+    const { data, error } = await db.from('players').select('count').limit(1);
+    
+    if (error) {
+      console.warn("⚠️ Supabase connection check failed:", error.message);
+      updateDbStatus('offline', '● Error');
+      return false;
+    }
+    
+    console.log("✅ Supabase connected successfully");
+    updateDbStatus('online', '● Online');
+    
+    // INICIAMOS LA ESCUCHA EN TIEMPO REAL
+    subscribeToRealtime();
+    
+    return true;
+  } catch (err) {
+    console.error("❌ Supabase connection error:", err);
+    updateDbStatus('offline', '● Error');
+    return false;
+  }
+}
+
+// NUEVA FUNCIÓN: Escuchar cambios en la base de datos en Tiempo Real
+function subscribeToRealtime() {
+  if (!db) return;
+
+  console.log("📡 Suscribiendo a cambios en tiempo real...");
+  
+  // Creamos un canal para escuchar la tabla 'players'
+  const playersChannel = db.channel('public:players')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, payload => {
+      console.log('¡Cambio detectado en Supabase!', payload);
+      
+      // Cuando hay un cambio, volvemos a descargar los datos silenciosamente
+      getPlayers().then(updatedPlayers => {
+        // Disparamos un evento personalizado para que React se entere y actualice la pantalla
+        const event = new CustomEvent('supabase-players-updated', { detail: updatedPlayers });
+        window.dispatchEvent(event);
+      });
+    })
+    .subscribe();
+}
+
+// Actualizar indicador visual
+function updateDbStatus(status, text) {
+  window.dbStatus = status; // Aseguramos que sea global
+  const el = document.getElementById('db-status');
+  if (!el) return;
+  
+  el.style.display = 'block';
+  el.className = `db-status ${status}`;
+  el.textContent = text;
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', async function() {
+  // Intentar inicializar Supabase
+  const initialized = initSupabase();
+  
+  if (initialized) {
+    // Verificar conexión (esto ahora también inicia el tiempo real)
+    await checkSupabaseConnection();
+    
+    // Reintentar conexión cada 30 segundos si está offline
+    setInterval(async () => {
+      if (window.dbStatus === 'offline') {
+        await checkSupabaseConnection();
+      }
+    }, 30000);
+  } else {
+    updateDbStatus('offline', '● No DB');
+  }
+});
+</script>
+
+<script type="text/babel" src="js/ProgressCircle.jsx"></script>
+<script type="text/babel" src="js/RadarChart.jsx"></script>
+<script type="text/babel" src="js/PlayerForm.jsx"></script>
+<script type="text/babel" src="js/PlayerCard.jsx"></script>
+<script type="text/babel" src="js/PlayerGallery.jsx"></script>
+<script type="text/babel" src="js/ComparisonView.jsx"></script>
+<script type="text/babel" src="js/MatchesView.jsx"></script>
+<script type="text/babel" src="js/RankingView.jsx"></script>
+<script type="text/babel" src="js/TournamentViews.jsx"></script>
+<script type="text/babel" src="js/TournamentSystem.jsx"></script>
+<script type="text/babel" src="js/HistorialView.jsx"></script>
+<script type="text/babel" src="js/TrainingsView.jsx"></script>
+<script type="text/babel" src="js/MedalsView.jsx"></script>
+<script type="text/babel" src="js/EvaluationsView.jsx"></script>
+<script type="text/babel" src="js/DashboardView.jsx"></script>
+<script type="text/babel" src="js/AuthModal.jsx"></script>
+<script type="text/babel" src="js/NewsSection.jsx"></script>
+<script type="text/babel" src="js/AdminPanel.jsx"></script>
+
+<script type="text/babel">
+const TABS = { DASHBOARD:'dashboard', ADD:'add', GALLERY:'gallery', COMPARE:'compare', TORNEOS:'torneos', HISTORIAL:'historial', NEWS:'news', RANKING:'ranking', MATCHES:'matches', TRAININGS:'trainings', MEDALS:'medals', EVALUATIONS:'evaluations', EDIT_STATS:'edit_stats' };
+
+// Inline SVG logos (from brand assets)
+const LogoWordmark = () => (
+  <svg viewBox="0 0 246.99 68.72" style={{ height:36, display:'block' }}>
+    <style>{`.lw { fill: #00ff97; }`}</style>
+    <g>
+      <g>
+        <path className="lw" d="M106.76,26.34l3.28,4.92-8.3,25.05-6.61,4.92h-28.64l-5.69-8.56,7.12-21.42-3.28-4.92h42.12ZM94.21,53.14l6.25-18.65h-29.36l2.87,4.3-4.77,14.35h25Z"/>
+        <path className="lw" d="M152.41,26.34l3.28,4.92-3.84,11.68-6.61,4.92h-24.8l1.08-3.18,6.56-4.92h16.14l1.9-5.28h-29.36l2.87,4.3-7.48,22.44-5.69-8.56,7.12-21.42-3.28-4.92h42.12Z"/>
+        <path className="lw" d="M198.06,26.34l3.28,4.92-1.03,3.23h-37.91l2.87,4.3-.31.97h20.96l-1.08,3.18-6.56,4.92h-16.04l-1.74,5.28h33.56l-1.02,3.18-6.61,4.92h-28.64l-5.69-8.56,7.12-21.42-3.28-4.92h42.12Z"/>
+        <path className="lw" d="M243.71,26.34l3.28,4.92-8.35,25.05-6.56,4.92h-3.64l8.92-26.75h-29.31l2.87,4.3-7.48,22.44-5.69-8.56,7.12-21.42-3.28-4.92h42.12Z"/>
+      </g>
+      <g>
+        <polygon className="lw" points="68.63 0 42.69 0 44.71 3.06 41.34 13.21 33.84 7.51 27.73 9.11 24.54 31.65 27.38 35.59 45.37 20.74 51.8 21.18 45.53 16.41 49.32 5.02 64.75 5.02 63.58 8.27 53.64 8.27 49.6 11.3 48.94 13.25 64.24 13.25 68.28 10.22 70.68 3.06 68.63 0"/>
+        <polygon className="lw" points="70.84 0 72.86 3.06 68.47 16.25 71.97 21.52 89.64 21.52 93.68 18.46 94.34 16.5 73.65 16.5 74.72 13.25 84.59 13.25 88.63 10.22 89.3 8.27 76.39 8.27 77.5 5.02 98.16 5.02 98.82 3.06 96.81 0 70.84 0"/>
+        <polygon className="lw" points="127.12 3.06 125.11 0 99.14 0 101.16 3.06 100.5 5.02 111.29 5.02 107.53 16.31 110.97 21.52 116.55 5.02 126.46 5.02 127.12 3.06"/>
+        <polygon className="lw" points="153.25 0 151.01 0 145.52 16.5 130.09 16.5 135.58 0 127.28 0 129.3 3.06 124.91 16.25 128.42 21.52 146.09 21.52 150.12 18.46 155.27 3.06 153.25 0"/>
+        <polygon className="lw" points="181.36 0 155.43 0 157.44 3.06 153.06 16.25 156.56 21.52 162.05 5.02 177.48 5.02 171.99 21.52 174.23 21.52 178.27 18.46 183.41 3.06 181.36 0"/>
+        <polygon className="lw" points="188.87 0 183.57 0 185.59 3.06 181.2 16.25 184.8 21.52 190.89 3.06 188.87 0"/>
+        <path className="lw" d="M216.98,0h-25.94l2.02,3.06-4.39,13.19,3.5,5.27,2.75-8.27h15.43l-2.74,8.27h2.21l4.07-3.06,5.14-15.4-2.05-3.06ZM212.03,8.27h-15.43l1.07-3.25h15.43l-1.07,3.25Z"/>
+        <polygon className="lw" points="246.32 5.02 246.99 3.06 244.97 0 219 0 221.05 3.06 217.64 13.25 238.31 13.25 237.24 16.5 216.82 16.5 220.17 21.52 237.81 21.52 241.84 18.46 245.25 8.27 224.59 8.27 225.66 5.02 246.32 5.02"/>
+        <polygon className="lw" points="35.63 42.19 29.8 64.79 24.35 68.21 46.91 68.72 50.92 63.82 40.25 43.71 35.63 42.19"/>
+        <polygon className="lw" points="30.18 45.78 6.89 47.22 1.95 43.09 8.44 64.71 14.33 67 30.16 50.65 30.18 45.78"/>
+        <polygon className="lw" points="25.08 41.71 16.51 20 18.91 14.03 .36 26.88 0 33.19 20.45 43.19 25.08 41.71"/>
+        <polygon className="lw" points="36.78 31.97 33.9 35.9 53.59 48.42 55.16 54.67 62.61 33.37 59.19 28.04 36.78 31.97"/>
+      </g>
+    </g>
+  </svg>
+);
+
+const BallIcon = ({ size = 32, color = '#00ff97' }) => (
+  <svg viewBox="0 0 190.86 186.58" width={size} height={size*186.58/190.86}>
+    <polygon fill={color} points="103.34 86.54 112.1 74.58 180.44 62.6 190.86 78.82 168.13 143.76 163.35 124.71 103.34 86.54"/>
+    <polygon fill={color} points="108.61 105.73 122.69 110.37 155.21 171.65 142.99 186.58 74.22 185.03 90.85 174.6 108.61 105.73"/>
+    <polygon fill={color} points="91.99 116.67 91.93 131.5 43.69 181.35 25.72 174.35 5.94 108.47 21 121.06 91.99 116.67"/>
+    <polygon fill={color} points="76.44 104.24 62.32 108.77 0 78.3 1.1 59.04 57.66 19.87 50.34 38.09 76.44 104.24"/>
+    <polygon fill={color} points="83.46 85.62 74.79 73.59 84.51 4.9 103.17 0 157.9 41.68 138.31 40.35 83.46 85.62"/>
+  </svg>
+);
+
+// --- NUEVO COMPONENTE: PANTALLA DE BIENVENIDA ---
+const WelcomeScreen = ({ onEnter }) => (
+  <div style={{
+    position: 'fixed', inset: 0, zIndex: 9999,
+    background: 'radial-gradient(circle at center, #0a192f 0%, #070b18 70%, #000000 100%)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  }}>
+    <style>
+      {`
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+        @keyframes glowPulse { 0%, 100% { filter: drop-shadow(0 0 15px rgba(0,255,151,0.4)); } 50% { filter: drop-shadow(0 0 35px rgba(0,255,151,0.8)); } }
+      `}
+    </style>
+    <div style={{ animation: 'float 4s ease-in-out infinite, glowPulse 3s ease-in-out infinite' }}>
+      <BallIcon size={140} />
+    </div>
+    <div style={{ marginTop: 40, transform: 'scale(1.5)', animation: 'fadeUp 1.2s ease-out forwards', opacity: 0, animationDelay: '0.3s' }}>
+      <LogoWordmark />
+    </div>
+    <p style={{ color: 'rgba(0,255,151,0.7)', fontFamily: 'Audiowide', letterSpacing: 4, marginTop: 30, fontSize: 12, animation: 'fadeUp 1.2s ease-out forwards', opacity: 0, animationDelay: '0.6s' }}>
+      TENNIS PLAYER ANALYSIS
+    </p>
+    <button onClick={onEnter} className="btn-neon" style={{ marginTop: 60, padding: '16px 45px', fontSize: 14, animation: 'fadeUp 1.2s ease-out forwards', opacity: 0, animationDelay: '0.9s' }}>
+      ENTRAR AL SISTEMA
+    </button>
+  </div>
+);
+
+// --- NUEVO COMPONENTE: EDICIÓN PARA ADMINS ---
+const AdminEditPlayers = ({ players, onUpdatePlayer }) => {
+  const [editingPlayer, setEditingPlayer] = React.useState(null);
+
+  if (editingPlayer) {
+    // Aseguramos de que exista el objeto de stats para los sliders
+    const stats = editingPlayer.stats || { ataque: 50, defensa: 50, saque: 50, fisico: 50, mentalidad: 50 };
+    
+    const updateStat = (statName, value) => {
+      setEditingPlayer(prev => ({
+        ...prev,
+        stats: { ...prev.stats, [statName]: Number(value) }
+      }));
+    };
+
+    return (
+      <div className="glass-card dialog-elev" style={{ padding: 24, maxWidth: 600, margin: '0 auto', animation: 'fadeIn 0.3s' }}>
+        <h2 style={{ color: '#00ff97', fontFamily: 'Audiowide', marginBottom: 20, fontSize: 18 }}>Editar Jugador</h2>
+        
+        <div style={{ marginBottom: 20 }}>
+           <label className="label-neon">Nombre del Jugador</label>
+           <input type="text" className="inp" style={{ fontSize: 16, fontWeight: 'bold' }} value={editingPlayer.nombre || editingPlayer.name} onChange={e => setEditingPlayer({...editingPlayer, nombre: e.target.value})} />
+        </div>
+        
+        <div className="two-col-form" style={{ marginBottom: 20 }}>
+          <div>
+            <label className="label-neon">Rating (ELO)</label>
+            <input type="number" className="inp" value={editingPlayer.rating} onChange={e => setEditingPlayer({...editingPlayer, rating: Number(e.target.value)})} />
+          </div>
+          <div>
+            <label className="label-neon">Categoría</label>
+            <select className="inp" value={editingPlayer.categoria} onChange={e => setEditingPlayer({...editingPlayer, categoria: e.target.value})}>
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+              <option value="Infantil">Infantil</option>
+            </select>
+          </div>
+          <div>
+            <label className="label-neon">Victorias</label>
+            <input type="number" className="inp" value={editingPlayer.wins} onChange={e => setEditingPlayer({...editingPlayer, wins: Number(e.target.value)})} />
+          </div>
+          <div>
+            <label className="label-neon">Derrotas</label>
+            <input type="number" className="inp" value={editingPlayer.losses} onChange={e => setEditingPlayer({...editingPlayer, losses: Number(e.target.value)})} />
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="label-neon">URL de Imagen (Foto del jugador para la Card)</label>
+            <input type="text" className="inp" placeholder="Ej: https://mi-imagen.com/foto.jpg" value={editingPlayer.imagen || ''} onChange={e => setEditingPlayer({...editingPlayer, imagen: e.target.value})} />
+          </div>
+        </div>
+
+        <h3 style={{ color: '#00ff97', fontFamily: 'Audiowide', fontSize: 14, marginBottom: 15, borderBottom: '1px solid #4d4d4d', paddingBottom: 5 }}>Atributos (Sliders del Radar)</h3>
+        <div style={{ display: 'grid', gap: 15 }}>
+          {['ataque', 'defensa', 'saque', 'fisico', 'mentalidad'].map(stat => (
+            <div key={stat} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label className="label-neon" style={{ width: 100, marginBottom: 0 }}>{stat}</label>
+              <input type="range" className="slider" min="0" max="100" value={stats[stat]} onChange={e => updateStat(stat, e.target.value)} style={{ flex: 1 }} />
+              <span style={{ color: '#fff', fontSize: 12, width: 30, textAlign: 'right' }}>{stats[stat]}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+          <button className="btn-outline" onClick={() => setEditingPlayer(null)}>Cancelar</button>
+          <button className="btn-neon" onClick={() => { onUpdatePlayer(editingPlayer); setEditingPlayer(null); }}>Guardar Cambios</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 style={{ color: '#00ff97', fontFamily: 'Audiowide', marginBottom: 24, fontSize: 20 }}>Panel de Edición (Administradores)</h2>
+      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        {players.map(p => (
+          <div key={p.id} className="glass-card" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {p.imagen ? <img src={p.imagen} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="Avatar" /> : <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👤</div>}
+              <div>
+                <strong style={{ fontSize: 16, display: 'block', marginBottom: 4 }}>{p.nombre || p.name}</strong>
+                <span style={{ color: '#b3b3b3', fontSize: 12 }}>Cat: {p.categoria} | ELO: {p.rating} | V/D: {p.wins}/{p.losses}</span>
+              </div>
+            </div>
+            <button className="btn-outline" style={{ padding: '8px 16px', fontSize: 10 }} onClick={() => setEditingPlayer(p)}>✎ Editar</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Push an auto-generated post into NewsSection feed (petunias-news)
+function pushNewsPost({ titulo, tipo, contenido, auto }) {
+  try {
+    const news = JSON.parse(localStorage.getItem('petunias-news')) || [];
+    news.unshift({
+      id: Date.now() + Math.random(),
+      titulo, tipo, contenido,
+      fecha: new Date().toISOString().slice(0,10),
+      autorNombre: auto ? 'Sistema' : 'Admin',
+      imagen: null, destacado: false, comments: [],
+      auto: !!auto,
+    });
+    localStorage.setItem('petunias-news', JSON.stringify(news));
+  } catch (e) { /* ignore */ }
+}
+
+function App() {
+  const [showWelcome, setShowWelcome] = React.useState(() => !sessionStorage.getItem('po-welcome'));
+  const [tab, setTab] = React.useState(() => localStorage.getItem('po-tab') || TABS.DASHBOARD);
+  const [players, setPlayers] = React.useState([]);
+  const [playersLoaded, setPlayersLoaded] = React.useState(false);
+  const [matches, setMatches] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('petunias-matches')) || []; } catch { return []; }
+  });
+  const [tournaments, setTournaments] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('petunias-tournaments')) || []; } catch { return []; }
+  });
+  const [currentUser, setCurrentUser] = React.useState(() => getSession());
+  const [showAuth, setShowAuth] = React.useState(false);
+  const [showProfile, setShowProfile] = React.useState(false);
+  const [showAdmin, setShowAdmin] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking');
+
+  // Cargar jugadores al iniciar
+ React.useEffect(() => {
+    async function loadPlayers() {
+      try {
+        const loaded = await window.getPlayers();
+        setPlayers(loaded);
+        setPlayersLoaded(true);
+        setDbConnectionStatus(window.dbStatus);
+      } catch (err) {
+        console.error("Failed to load players:", err);
+        setPlayers([]);
+        setPlayersLoaded(true);
+      }
+    }
+    
+    // Carga inicial
+    loadPlayers();
+
+    // ESCUCHADOR DE TIEMPO REAL: Se activa cuando Supabase detecta un cambio
+    const handleRealtimeUpdate = (event) => {
+      console.log("🔄 React actualizando vista con nuevos datos de Supabase...");
+      setPlayers(event.detail);
+    };
+
+    window.addEventListener('supabase-players-updated', handleRealtimeUpdate);
+
+    // Limpieza al desmontar
+    return () => {
+      window.removeEventListener('supabase-players-updated', handleRealtimeUpdate);
+    };
+  }, []);
+
+  React.useEffect(() => { localStorage.setItem('petunias-tournaments', JSON.stringify(tournaments)); }, [tournaments]);
+  React.useEffect(() => { localStorage.setItem('petunias-matches', JSON.stringify(matches)); }, [matches]);
+  React.useEffect(() => { localStorage.setItem('po-tab', tab); }, [tab]);
+
+  const handleEnterApp = () => {
+    sessionStorage.setItem('po-welcome', '1');
+    setShowWelcome(false);
+  };
+
+const handleUpdatePlayerStats = async (updatedPlayer) => {
+    setPlayers(prev => prev.map(p => p.id === updatedPlayer.id ? updatedPlayer : p));
+    const existing = JSON.parse(localStorage.getItem('petunias-players')) || [];
+    const updatedList = existing.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+    localStorage.setItem('petunias-players', JSON.stringify(updatedList));
+
+    if (window.db && window.dbStatus === 'online') {
+      try {
+        await window.db.from('players').update({
+          name: updatedPlayer.nombre || updatedPlayer.name,
+          rating: updatedPlayer.rating,
+          wins: updatedPlayer.wins,
+          losses: updatedPlayer.losses,
+          category: updatedPlayer.categoria
+        }).eq('id', updatedPlayer.id);
+      } catch (err) {
+        console.warn("Error actualizando en Supabase:", err);
+      }
+    }
+    alert(`Estadísticas y atributos de ${updatedPlayer.nombre || updatedPlayer.name} actualizados con éxito.`);
+  };
+
+  // Guardar jugador con soporte para Supabase
+  const addPlayer = async (player) => {
+    const p = ensurePlayerRating({ ...player, id: Date.now() });
+    
+    // Guardar en Supabase/localStorage
+    const result = await savePlayer(p);
+    
+    if (result.success) {
+      // Actualizar estado local
+      setPlayers(prev => [result.data, ...prev]);
+      
+      // Auto-feed: new player
+      addAutoFeedEvents([{ type:'nuevo', playerId:p.id, playerName:p.nombre, categoria:p.categoria }]);
+      
+      // Also push to NewsSection feed as a post
+      pushNewsPost({
+        titulo: `🎾 Nuevo jugador: ${p.nombre}`,
+        tipo: 'noticia',
+        contenido: `Se incorpora ${p.nombre} en categoría ${p.categoria} con rating inicial ${p.rating}.`,
+        auto: true,
+      });
+      
+      setTab(TABS.GALLERY);
+      return result;
+    } else {
+      alert('Error al guardar el jugador. Intenta de nuevo.');
+      return result;
+    }
+  };
+  
+  const deletePlayer = async (id) => {
+    if (!confirm('¿Eliminar este jugador?')) return;
+    
+    await deletePlayerFromDB(id);
+    setPlayers(prev => prev.filter(p => p.id !== id));
+  };
+
+  // ── Match handlers (apply ELO + auto-feed) ─────────────────────────────
+  const addMatch = (matchData) => {
+    const match = createMatch({ ...matchData, createdBy: currentUser?.id });
+    const { players: updatedPlayers, events } = applyMatchToPlayers(players, match);
+    // Attach deltas to the match for display
+    const pA = players.find(p => p.id === match.playerAId);
+    const pB = players.find(p => p.id === match.playerBId);
+    const resultEvent = events.find(e => e.type === 'resultado');
+    const enrichedMatch = {
+      ...match,
+      deltaA: resultEvent?.deltaA,
+      deltaB: resultEvent?.deltaB,
+    };
+    setPlayers(updatedPlayers);
+    setMatches(prev => [...prev, enrichedMatch]);
+    addAutoFeedEvents(events);
+
+    // Post to NewsSection feed
+    const winner = updatedPlayers.find(p => p.id === match.winnerId);
+    const loser  = updatedPlayers.find(p => p.id !== match.winnerId && (p.id === match.playerAId || p.id === match.playerBId));
+    pushNewsPost({
+      titulo: `🏆 ${winner.nombre} venció a ${loser.nombre}`,
+      tipo: 'resultado',
+      contenido: `${match.score ? 'Score: ' + match.score + '. ' : ''}Cambios ELO: ${winner.nombre} ${resultEvent.winnerId === pA.id ? (resultEvent.deltaA >= 0 ? '+' : '') + resultEvent.deltaA : (resultEvent.deltaB >= 0 ? '+' : '') + resultEvent.deltaB}, ${loser.nombre} ${resultEvent.winnerId === pA.id ? (resultEvent.deltaB >= 0 ? '+' : '') + resultEvent.deltaB : (resultEvent.deltaA >= 0 ? '+' : '') + resultEvent.deltaA}.`,
+      auto: true,
+    });
+
+    // Auto-posts for ascenso/descenso/racha
+    events.filter(e => e.type !== 'resultado').forEach(e => {
+      if (e.type === 'ascenso') {
+        pushNewsPost({ titulo: `⬆ ${e.playerName} sube a categoría ${e.to}`, tipo:'noticia',
+          contenido: `Ascenso automático de ${e.from} a ${e.to} tras el último partido.`, auto:true });
+      } else if (e.type === 'descenso') {
+        pushNewsPost({ titulo: `⬇ ${e.playerName} baja a categoría ${e.to}`, tipo:'noticia',
+          contenido: `Descenso automático de ${e.from} a ${e.to} tras el último partido.`, auto:true });
+      } else if (e.type === 'racha') {
+        pushNewsPost({ titulo: `🔥 ${e.playerName} en racha de ${e.streak} victorias`, tipo:'resultado',
+          contenido: `${e.playerName} suma ${e.streak} victorias consecutivas.`, auto:true });
+      }
+    });
+  };
+
+  const deleteMatch = (id) => {
+    const match = matches.find(m => m.id === id);
+    if (!match) return;
+    if (!confirm('¿Eliminar este partido? Se revertirá el cambio de ELO.')) return;
+    setPlayers(revertMatchFromPlayers(players, match));
+    setMatches(prev => prev.filter(m => m.id !== id));
+  };
+  const handleLogout = () => { clearSession(); setCurrentUser(null); setShowProfile(false); };
+  const handleAuth = (user) => { setCurrentUser(user); setShowAuth(false); };
+  const isAdmin = currentUser?.isAdmin;
+
+  const navItems = [
+    { key: TABS.DASHBOARD, label: '⌂ Home'                            },
+    { key: TABS.NEWS,      label: '◎ Noticias'                        },
+    { key: TABS.RANKING,   label: '★ Ranking'                         },
+    { key: TABS.MATCHES,   label: `⚔ Partidos (${matches.length})`   },
+    { key: TABS.ADD,       label: '+ Jugador',     adminOnly: true     },
+    { key: TABS.EDIT_STATS,label: '✎ Editar Stats',adminOnly: true     },
+    { key: TABS.GALLERY,   label: `◈ Galería (${players.length})`     },
+    { key: TABS.COMPARE,   label: '⇄ Comparar',    disabled: players.length < 2 },
+    { key: TABS.TORNEOS,   label: `⬡ Torneos (${tournaments.length})` },
+    { key: TABS.HISTORIAL, label: '◉ Historial'                       },
+    { key: TABS.TRAININGS,   label: '🎾 Entrenamientos', coachOrAdmin: true },
+    { key: TABS.EVALUATIONS, label: '📋 Evaluaciones',   coachOrAdmin: true },
+    { key: TABS.MEDALS,      label: '🏅 Medallas'                          },
+  ].filter(n => (!n.adminOnly || isAdmin) && (!n.coachOrAdmin || isAdmin || currentUser?.isCoach));
+
+  const goTab = (k) => { setTab(k); setMenuOpen(false); };
+
+  // Función para sincronizar manualmente
+  const handleSync = async () => {
+    updateDbStatus('syncing', '⟳ Syncing...');
+    const result = await syncWithSupabase();
+    alert(`Sincronización: ${result.synced} jugadores sincronizados, ${result.failed} fallidos`);
+    // Recargar jugadores
+    const loaded = await getPlayers();
+    setPlayers(loaded);
+  };
+
+  if (!playersLoaded) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: 20
+      }}>
+        <BallIcon size={64} />
+        <div style={{ color: '#00ff97', fontFamily: 'Audiowide', fontSize: 14 }}>
+          Cargando PETUNIAS OPEN...
+        </div>
+      </div>
+    );
+  }
+
+  if (showWelcome) {
+    return <WelcomeScreen onEnter={handleEnterApp} />;
+  }
+
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+
+      {/* ── Header ── */}
+      <header style={{
+        position:'sticky', top:0, zIndex:40,
+        background:'rgba(7,11,24,0.95)', backdropFilter:'blur(20px)',
+        borderBottom:'1px solid rgba(0,255,151,0.12)',
+        padding:'16px 20px 14px'
+      }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          {/* Logo + user row */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+           {/* Logo y Versión */}
+            <div style={{ display:'flex', alignItems:'flex-end', gap: 12 }}>
+              <button onClick={()=>goTab(TABS.DASHBOARD)}
+                title="Ir al dashboard"
+                style={{ display:'flex', alignItems:'center',
+                  background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                <LogoWordmark />
+              </button>
+              
+              {/* Etiqueta de Versión */}
+              <span style={{
+                background: 'rgba(0,255,151,0.1)', 
+                color: '#00ff97', 
+                border: '1px solid rgba(0,255,151,0.3)',
+                padding: '2px 6px', 
+                borderRadius: 4, 
+                fontSize: 9, 
+                fontFamily: 'Audiowide', 
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                marginBottom: 4
+              }}>
+                Pre-Alpha 1.10
+              </span>
+            </div>
+            {/* 🚀 BOTÓN DE RESCATE TEMPORAL */}
+            <button 
+             onClick={async () => {
+    alert("Iniciando carga inteligente...");
+    const localPlayers = JSON.parse(localStorage.getItem('petunias-players') || '[]');
+    if(localPlayers.length === 0) return alert("No hay jugadores locales.");
+    
+    try {
+        for(let p of localPlayers) {
+            // Solo enviamos los campos básicos que sabemos que funcionan
+            // Si quieres enviar más, asegúrate de que existan en Supabase
+            const { error } = await db.from('players').upsert(p);
+            
+            if (error) {
+                console.warn("Error con un jugador, intentando sin 'stats'...", error);
+                // Si falla por 'stats', lo quitamos y volvemos a intentar
+                const { id, created_at, stats, ...cleanPlayer } = p;
+                await db.from('players').upsert(cleanPlayer);
+            }
+        }
+        alert("¡POR FIN! Revisa Supabase y tu celular ahora.");
+    } catch (error) {
+        console.error("Error crítico:", error);
+        alert("Algo salió mal: " + error.message);
+    }
+}}
+            >
+              🚀 FORZAR SUBIDA A SUPABASE
+            </button>
+
+            {/* User area */}
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              {/* Sync button - visible when online */}
+              {dbStatus === 'online' && (
+                <button onClick={handleSync}
+                  style={{ padding:'6px 12px', background:'rgba(0,255,151,0.08)',
+                    border:'1px solid rgba(0,255,151,0.25)', color:'#00ff97',
+                    borderRadius:7, cursor:'pointer', fontSize:10, fontFamily:'Audiowide',
+                    textTransform:'uppercase', letterSpacing:1 }}>
+                  🔄 Sync
+                </button>
+              )}
+              
+              {isAdmin && (
+                <button onClick={()=>setShowAdmin(true)}
+                  style={{ padding:'6px 12px', background:'rgba(255,215,0,0.1)',
+                    border:'1px solid rgba(255,215,0,0.35)', color:'#FFD700',
+                    borderRadius:7, cursor:'pointer', fontSize:10, fontFamily:'Audiowide',
+                    textTransform:'uppercase', letterSpacing:1 }}>⚙ Admin</button>
+              )}
+              {currentUser ? (
+                <button onClick={()=>setShowProfile(true)}
+                  style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px',
+                    background:'rgba(0,255,151,0.08)', border:'1px solid rgba(0,255,151,0.25)',
+                    borderRadius:7, cursor:'pointer' }}>
+                  {currentUser.avatar
+                    ? <img src={currentUser.avatar} alt="" style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover' }}/>
+                    : <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(0,255,151,0.2)',
+                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>👤</div>
+                  }
+                  <span style={{ fontSize:11, color:'#00ff97', fontFamily:'Audiowide',
+                    textTransform:'uppercase', letterSpacing:.5, maxWidth:80,
+                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {currentUser.nombre.split(' ')[0]}
+                  </span>
+                </button>
+              ) : (
+                <button onClick={()=>setShowAuth(true)} className="btn-neon"
+                  style={{ padding:'7px 16px', fontSize:11 }}>Ingresar</button>
+              )}
+
+              {/* Hamburger (mobile) */}
+              <button onClick={()=>setMenuOpen(!menuOpen)}
+                style={{ display:'none', background:'none', border:'1px solid rgba(0,255,151,0.3)',
+                  color:'#00ff97', borderRadius:7, padding:'6px 10px', cursor:'pointer',
+                  fontSize:16, lineHeight:1 }} className="hamburger">
+                {menuOpen ? '✕' : '☰'}
+              </button>
+            </div>
+          </div>
+
+          {/* Nav desktop */}
+          <nav style={{ display:'flex', gap:8, flexWrap:'wrap' }} className="nav-desktop">
+            {navItems.map(n => (
+              <button key={n.key} disabled={n.disabled}
+                onClick={() => goTab(n.key)}
+                className={`nav-tab${tab === n.key ? ' active' : ''}`}>
+                {n.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Nav mobile dropdown */}
+          {menuOpen && (
+            <div style={{ display:'flex', flexDirection:'column', gap:6, paddingTop:10 }} className="nav-mobile">
+              {navItems.map(n => (
+                <button key={n.key} disabled={n.disabled}
+                  onClick={() => goTab(n.key)}
+                  style={{ padding:'12px 16px', borderRadius:8, textAlign:'left',
+                    background: tab===n.key?'rgba(0,255,151,0.12)':'rgba(255,255,255,0.03)',
+                    border: `1px solid ${tab===n.key?'rgba(0,255,151,0.4)':'rgba(255,255,255,0.07)'}`,
+                    color: tab===n.key?'#00ff97':'rgba(255,255,255,0.7)',
+                    fontFamily:'Audiowide', fontSize:12, textTransform:'uppercase',
+                    letterSpacing:1, cursor:'pointer' }}>
+                  {n.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ── Main ── */}
+      <main style={{ flex:1, maxWidth:1200, margin:'0 auto', width:'100%', padding:'32px 20px' }}>
+        {tab === TABS.DASHBOARD && <DashboardView players={players} matches={matches}
+                                     tournaments={tournaments} currentUser={currentUser}
+                                     onGoTab={goTab} />}
+        {tab === TABS.NEWS     && <NewsSection currentUser={currentUser} />}
+        {tab === TABS.RANKING  && <RankingView players={players} matches={matches} />}
+        {tab === TABS.MATCHES  && <MatchesView players={players} matches={matches}
+                                    onAddMatch={addMatch} onDeleteMatch={deleteMatch}
+                                    currentUser={currentUser} />}
+        {tab === TABS.ADD      && <PlayerForm onAdd={addPlayer} />}
+        {tab === TABS.EDIT_STATS && isAdmin && <AdminEditPlayers players={players} onUpdatePlayer={handleUpdatePlayerStats} />}
+        {tab === TABS.GALLERY  && <PlayerGallery players={players} onDelete={deletePlayer} />}
+        {tab === TABS.COMPARE  && <ComparisonView players={players} />}
+        {tab === TABS.TORNEOS  && <TournamentPage savedPlayers={players} tournaments={tournaments} onSave={setTournaments} />}
+        {tab === TABS.HISTORIAL && <HistorialView players={players} tournaments={tournaments} matches={matches} />}
+        {tab === TABS.TRAININGS && <TrainingsView players={players} currentUser={currentUser} />}
+        {tab === TABS.MEDALS      && <MedalsView      players={players} matches={matches} />}
+        {tab === TABS.EVALUATIONS && <EvaluationsView players={players} currentUser={currentUser} />}
+      </main>
+
+      {/* ── Footer ── */}
+      <footer style={{ textAlign:'center', padding:'20px',
+        color:'rgba(0,255,151,0.2)', fontSize:10,
+        textTransform:'uppercase', letterSpacing:4,
+        fontFamily:'Audiowide', borderTop:'1px solid rgba(0,255,151,0.06)' }}>
+        PETUNIAS OPEN © 2025 · Tennis Player Analysis Platform
+      </footer>
+
+      {/* ── Modals ── */}
+      {showAuth    && <AuthModal onClose={()=>setShowAuth(false)} onAuth={handleAuth} />}
+      {showProfile && currentUser && (
+        <ProfileModal user={currentUser} players={players}
+          onClose={()=>setShowProfile(false)}
+          onUpdate={u=>setCurrentUser(u)}
+          onLogout={handleLogout} />
+      )}
+      {showAdmin && isAdmin && (
+        <AdminPanel players={players} tournaments={tournaments}
+          onPlayersChange={setPlayers}
+          onTournamentsChange={setTournaments}
+          onClose={()=>setShowAdmin(false)} />
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+
+</body>
+</html>
