@@ -490,9 +490,9 @@
     const SUPABASE_URL = "https://ssrfkclvzvjzipunpalh.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzcmZrY2x2enZqemlwdW5wYWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTI5NDksImV4cCI6MjA5MjM2ODk0OX0.JibvsRZB7hhfungMorwVF8Zom7_sudlVXTksAVQLsOo";
 
-    // Variable global para el cliente
-    let db = null;
-    let dbStatus = 'offline';
+    // Variable global para el cliente (var para que sea accesible como window.db)
+    var db = null;
+    var dbStatus = 'offline';
 
     // Inicializar cliente Supabase de forma segura
     function initSupabase() {
@@ -513,6 +513,8 @@
           }
         });
 
+        // Exponemos explícitamente en window para que los componentes React (Babel) lo vean
+        window.db = db;
         console.log("✅ Supabase client initialized");
         return true;
       } catch (err) {
