@@ -11,6 +11,32 @@
 
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Inyección correcta de Tailwind CSS y configuración -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'brand-green': '#32CD99',
+          'brand-teal': '#20B2AA',
+          'dark-bg': '#0A0E1A',
+          'mid-bg': '#1A2234',
+          'text-muted': '#A0AEC0',
+          'nav-bg': '#0D1120'
+        },
+        fontFamily: {
+          audiowide: ['Audiowide', 'monospace'],
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Inyección correcta de Framer Motion -->
+<script src="https://unpkg.com/framer-motion@10.16.1/dist/framer-motion.js"></script>
+
 <style>
   /* ── Responsive + Extra ── */
   .two-col-form { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
@@ -652,6 +678,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 <script type="text/babel" src="js/AdminPanel.jsx"></script>
 
 <script type="text/babel">
+// Exponer motion globalmente para que los componentes React (JSX) puedan acceder a <motion.div>
+const { motion, AnimatePresence } = window.Motion;
+window.motion = motion;
+window.AnimatePresence = AnimatePresence;
+
 const TABS = { DASHBOARD:'dashboard', ADD:'add', GALLERY:'gallery', COMPARE:'compare', TORNEOS:'torneos', HISTORIAL:'historial', NEWS:'news', RANKING:'ranking', MATCHES:'matches', TRAININGS:'trainings', MEDALS:'medals', EVALUATIONS:'evaluations', EDIT_STATS:'edit_stats' };
 
 // Inline SVG logos (from brand assets)
@@ -738,57 +769,72 @@ const AdminEditPlayers = ({ players, onUpdatePlayer }) => {
     };
 
     return (
-      <div className="glass-card dialog-elev" style={{ padding: 24, maxWidth: 600, margin: '0 auto', animation: 'fadeIn 0.3s' }}>
-        <h2 style={{ color: '#00ff97', fontFamily: 'Audiowide', marginBottom: 20, fontSize: 18 }}>Editar Jugador</h2>
-        
-        <div style={{ marginBottom: 20 }}>
-           <label className="label-neon">Nombre del Jugador</label>
-           <input type="text" className="inp" style={{ fontSize: 16, fontWeight: 'bold' }} value={editingPlayer.nombre || editingPlayer.name} onChange={e => setEditingPlayer({...editingPlayer, nombre: e.target.value})} />
-        </div>
-        
-        <div className="two-col-form" style={{ marginBottom: 20 }}>
-          <div>
-            <label className="label-neon">Rating (ELO)</label>
-            <input type="number" className="inp" value={editingPlayer.rating} onChange={e => setEditingPlayer({...editingPlayer, rating: Number(e.target.value)})} />
-          </div>
-          <div>
-            <label className="label-neon">Categoría</label>
-            <select className="inp" value={editingPlayer.categoria} onChange={e => setEditingPlayer({...editingPlayer, categoria: e.target.value})}>
-              <option value="A">A</option><option value="B">B</option>
-              <option value="C">C</option><option value="D">D</option>
-              <option value="Infantil">Infantil</option>
-            </select>
-          </div>
-          <div>
-            <label className="label-neon">Victorias</label>
-            <input type="number" className="inp" value={editingPlayer.wins} onChange={e => setEditingPlayer({...editingPlayer, wins: Number(e.target.value)})} />
-          </div>
-          <div>
-            <label className="label-neon">Derrotas</label>
-            <input type="number" className="inp" value={editingPlayer.losses} onChange={e => setEditingPlayer({...editingPlayer, losses: Number(e.target.value)})} />
-          </div>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label className="label-neon">URL de Imagen (Foto del jugador para la Card)</label>
-            <input type="text" className="inp" placeholder="Ej: https://mi-imagen.com/foto.jpg" value={editingPlayer.imagen || ''} onChange={e => setEditingPlayer({...editingPlayer, imagen: e.target.value})} />
-          </div>
-        </div>
-
-        <h3 style={{ color: '#00ff97', fontFamily: 'Audiowide', fontSize: 14, marginBottom: 15, borderBottom: '1px solid #4d4d4d', paddingBottom: 5 }}>Atributos (Sliders del Radar)</h3>
-        <div style={{ display: 'grid', gap: 15 }}>
-          {['ataque', 'defensa', 'saque', 'fisico', 'mentalidad'].map(stat => (
-            <div key={stat} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <label className="label-neon" style={{ width: 100, marginBottom: 0 }}>{stat}</label>
-              <input type="range" className="slider" min="0" max="100" value={stats[stat]} onChange={e => updateStat(stat, e.target.value)} style={{ flex: 1 }} />
-              <span style={{ color: '#fff', fontSize: 12, width: 30, textAlign: 'right' }}>{stats[stat]}</span>
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => e.target === e.currentTarget && setEditingPlayer(null)}
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ duration: 0.2 }}
+            className="bg-mid-bg p-8 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-2xl my-auto relative"
+          >
+            <h2 className="text-brand-green font-audiowide mb-6 text-xl">Editar Jugador</h2>
+            
+            <div className="mb-5">
+               <label className="text-sm font-medium text-text-muted mb-1.5 block">Nombre del Jugador</label>
+               <input type="text" className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all font-bold text-base" value={editingPlayer.nombre || editingPlayer.name} onChange={e => setEditingPlayer({...editingPlayer, nombre: e.target.value})} />
             </div>
-          ))}
-        </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+              <div>
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Rating (ELO)</label>
+                <input type="number" className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" value={editingPlayer.rating} onChange={e => setEditingPlayer({...editingPlayer, rating: Number(e.target.value)})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Categoría</label>
+                <select className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" value={editingPlayer.categoria} onChange={e => setEditingPlayer({...editingPlayer, categoria: e.target.value})}>
+                  <option value="A">A</option><option value="B">B</option>
+                  <option value="C">C</option><option value="D">D</option>
+                  <option value="Infantil">Infantil</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Victorias</label>
+                <input type="number" className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" value={editingPlayer.wins} onChange={e => setEditingPlayer({...editingPlayer, wins: Number(e.target.value)})} />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Derrotas</label>
+                <input type="number" className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" value={editingPlayer.losses} onChange={e => setEditingPlayer({...editingPlayer, losses: Number(e.target.value)})} />
+              </div>
+              <div className="col-span-1 md:col-span-2">
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">URL de Imagen (Foto del jugador para la Card)</label>
+                <input type="text" className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" placeholder="Ej: https://mi-imagen.com/foto.jpg" value={editingPlayer.imagen || ''} onChange={e => setEditingPlayer({...editingPlayer, imagen: e.target.value})} />
+              </div>
+            </div>
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-          <button className="btn-outline" onClick={() => setEditingPlayer(null)}>Cancelar</button>
-          <button className="btn-neon" onClick={() => { onUpdatePlayer(editingPlayer); setEditingPlayer(null); }}>Guardar Cambios</button>
-        </div>
-      </div>
+            <h3 className="text-brand-green font-audiowide text-sm mb-4 border-b border-gray-800 pb-2">Atributos (Sliders del Radar)</h3>
+            <div className="grid gap-4">
+              {['ataque', 'defensa', 'saque', 'fisico', 'mentalidad'].map(stat => (
+                <div key={stat} className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-text-muted w-24 capitalize m-0">{stat}</label>
+                  <input type="range" className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-brand-green" min="0" max="100" value={stats[stat]} onChange={e => updateStat(stat, e.target.value)} />
+                  <span className="text-white text-xs w-8 text-right font-bold">{stats[stat]}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 mt-8 justify-end">
+              <button className="text-text-muted hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors" onClick={() => setEditingPlayer(null)}>Cancelar</button>
+              <button className="bg-brand-green text-dark-bg font-semibold rounded-lg px-5 py-2.5 text-sm hover:bg-brand-teal transition-colors" onClick={() => { onUpdatePlayer(editingPlayer); setEditingPlayer(null); }}>Guardar Cambios</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
@@ -796,17 +842,35 @@ const AdminEditPlayers = ({ players, onUpdatePlayer }) => {
     <div>
       <h2 style={{ color: '#00ff97', fontFamily: 'Audiowide', marginBottom: 24, fontSize: 20 }}>Panel de Edición (Administradores)</h2>
       <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {players.map(p => (
-          <div key={p.id} className="glass-card" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {p.imagen ? <img src={p.imagen} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} alt="Avatar" /> : <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#252525', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👤</div>}
+        {players.map((p, index) => (
+          <motion.div 
+            key={p.id} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            className="bg-mid-bg border border-gray-800 rounded-xl p-4 flex justify-between items-center shadow-lg hover:border-brand-green/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              {p.imagen ? (
+                <img src={p.imagen} className="w-10 h-10 rounded-full object-cover border border-gray-700" alt="Avatar" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-dark-bg flex items-center justify-center text-lg border border-gray-800">
+                  👤
+                </div>
+              )}
               <div>
-                <strong style={{ fontSize: 16, display: 'block', marginBottom: 4 }}>{p.nombre || p.name}</strong>
-                <span style={{ color: '#b3b3b3', fontSize: 12 }}>Cat: {p.categoria} | ELO: {p.rating} | V/D: {p.wins}/{p.losses}</span>
+                <strong className="text-white text-base block mb-1">{p.nombre || p.name}</strong>
+                <span className="text-text-muted text-xs">Cat: {p.categoria} | ELO: <span className="text-brand-green">{p.rating}</span> | V/D: {p.wins}/{p.losses}</span>
               </div>
             </div>
-            <button className="btn-outline" style={{ padding: '8px 16px', fontSize: 10 }} onClick={() => setEditingPlayer(p)}>✎ Editar</button>
-          </div>
+            <button 
+              className="px-4 py-2 border border-gray-600 rounded-full text-white text-xs font-audiowide uppercase tracking-wider hover:bg-white/5 hover:border-white transition-all" 
+              onClick={() => setEditingPlayer(p)}
+            >
+              ✎ Editar
+            </button>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -1054,12 +1118,12 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
     <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
 
       {/* ── Header ── */}
-      <header style={{
-        position:'sticky', top:0, zIndex:40,
-        background:'rgba(7,11,24,0.95)', backdropFilter:'blur(20px)',
-        borderBottom:'1px solid rgba(0,255,151,0.12)',
-        padding:'16px 20px 14px'
-      }}>
+      <motion.header 
+        initial={{ y: -100 }} 
+        animate={{ y: 0 }} 
+        transition={{ duration: 0.5 }}
+        className="sticky top-0 z-50 bg-nav-bg/90 backdrop-blur-md py-4 px-6 border-b border-gray-800"
+      >
         <div style={{ maxWidth:1200, margin:'0 auto' }}>
           {/* Logo + user row */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
@@ -1067,24 +1131,14 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
             <div style={{ display:'flex', alignItems:'flex-end', gap: 12 }}>
               <button onClick={()=>goTab(TABS.DASHBOARD)}
                 title="Ir al dashboard"
-                style={{ display:'flex', alignItems:'center',
-                  background:'none', border:'none', padding:0, cursor:'pointer' }}>
-                <LogoWordmark />
+                className="bg-transparent border-none p-0 cursor-pointer flex items-center">
+                <span className="text-2xl font-bold tracking-tight">
+                  <span className="text-white">Petunias</span> <span className="text-brand-green">Open</span>
+                </span>
               </button>
               
               {/* Etiqueta de Versión */}
-              <span style={{
-                background: 'rgba(0,255,151,0.1)', 
-                color: '#00ff97', 
-                border: '1px solid rgba(0,255,151,0.3)',
-                padding: '2px 6px', 
-                borderRadius: 4, 
-                fontSize: 9, 
-                fontFamily: 'Audiowide', 
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                marginBottom: 4
-              }}>
+              <span className="bg-brand-green/10 text-brand-green border border-brand-green/30 px-2 py-0.5 rounded text-[9px] font-audiowide uppercase tracking-wider mb-1">
                 Pre-Alpha 1.10
               </span>
             </div>
@@ -1123,58 +1177,46 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
               {/* Sync button - visible when online */}
               {dbStatus === 'online' && (
                 <button onClick={handleSync}
-                  style={{ padding:'6px 12px', background:'rgba(0,255,151,0.08)',
-                    border:'1px solid rgba(0,255,151,0.25)', color:'#00ff97',
-                    borderRadius:7, cursor:'pointer', fontSize:10, fontFamily:'Audiowide',
-                    textTransform:'uppercase', letterSpacing:1 }}>
+                  className="rounded-full px-4 py-2 bg-brand-green/10 border border-brand-green/25 text-brand-green text-[10px] font-audiowide uppercase tracking-widest hover:bg-brand-green/20 transition-colors">
                   🔄 Sync
                 </button>
               )}
               
               {isAdmin && (
                 <button onClick={()=>setShowAdmin(true)}
-                  style={{ padding:'6px 12px', background:'rgba(255,215,0,0.1)',
-                    border:'1px solid rgba(255,215,0,0.35)', color:'#FFD700',
-                    borderRadius:7, cursor:'pointer', fontSize:10, fontFamily:'Audiowide',
-                    textTransform:'uppercase', letterSpacing:1 }}>⚙ Admin</button>
+                  className="rounded-full px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[10px] font-audiowide uppercase tracking-widest hover:bg-yellow-500/20 transition-colors">⚙ Admin</button>
               )}
               {currentUser ? (
                 <button onClick={()=>setShowProfile(true)}
-                  style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 12px',
-                    background:'rgba(0,255,151,0.08)', border:'1px solid rgba(0,255,151,0.25)',
-                    borderRadius:7, cursor:'pointer' }}>
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand-green/10 border border-brand-green/25 hover:bg-brand-green/20 transition-colors">
                   {currentUser.avatar
-                    ? <img src={currentUser.avatar} alt="" style={{ width:22, height:22, borderRadius:'50%', objectFit:'cover' }}/>
-                    : <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(0,255,151,0.2)',
-                        display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>👤</div>
+                    ? <img src={currentUser.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    : <div className="w-5 h-5 rounded-full bg-brand-green/20 flex items-center justify-center text-xs">👤</div>
                   }
-                  <span style={{ fontSize:11, color:'#00ff97', fontFamily:'Audiowide',
-                    textTransform:'uppercase', letterSpacing:.5, maxWidth:80,
-                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  <span className="text-[11px] text-brand-green font-audiowide uppercase tracking-wider max-w-[80px] truncate">
                     {currentUser.nombre.split(' ')[0]}
                   </span>
                 </button>
               ) : (
-                <button onClick={()=>setShowAuth(true)} className="btn-neon"
-                  style={{ padding:'7px 16px', fontSize:11 }}>Ingresar</button>
+                <button onClick={()=>setShowAuth(true)} className="rounded-full px-6 py-2.5 font-semibold bg-brand-green text-dark-bg hover:bg-brand-teal transition-colors">
+                  Ingresar
+                </button>
               )}
 
               {/* Hamburger (mobile) */}
               <button onClick={()=>setMenuOpen(!menuOpen)}
-                style={{ display:'none', background:'none', border:'1px solid rgba(0,255,151,0.3)',
-                  color:'#00ff97', borderRadius:7, padding:'6px 10px', cursor:'pointer',
-                  fontSize:16, lineHeight:1 }} className="hamburger">
+                className="md:hidden bg-transparent border border-brand-green/30 text-brand-green rounded-lg px-2.5 py-1.5 cursor-pointer text-base hamburger hover:bg-brand-green/10 transition-colors">
                 {menuOpen ? '✕' : '☰'}
               </button>
             </div>
           </div>
 
           {/* Nav desktop */}
-          <nav style={{ display:'flex', gap:8, flexWrap:'wrap' }} className="nav-desktop">
+          <nav className="hidden md:flex gap-2 flex-wrap nav-desktop">
             {navItems.map(n => (
               <button key={n.key} disabled={n.disabled}
                 onClick={() => goTab(n.key)}
-                className={`nav-tab${tab === n.key ? ' active' : ''}`}>
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${tab === n.key ? 'bg-brand-green text-dark-bg hover:bg-brand-teal' : 'bg-mid-bg text-text-muted hover:text-white border border-transparent'}`}>
                 {n.label}
               </button>
             ))}
@@ -1198,10 +1240,10 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
             </div>
           )}
         </div>
-      </header>
+      </motion.header>
 
       {/* ── Main ── */}
-      <main style={{ flex:1, maxWidth:1200, margin:'0 auto', width:'100%', padding:'32px 20px' }}>
+      <main className="flex-1 w-full max-w-[1200px] mx-auto px-5 py-8">
         {tab === TABS.DASHBOARD && <DashboardView players={players} matches={matches}
                                      tournaments={tournaments} currentUser={currentUser}
                                      onGoTab={goTab} />}
