@@ -71,44 +71,48 @@ function RankingView({ players, matches }) {
 
       {/* Full list */}
       {ranked.length === 0 ? (
-        <div className="glass-card" style={{ padding:40, textAlign:'center', color:'rgba(255,255,255,0.4)' }}>
+        <div className="bg-mid-bg rounded-lg p-10 text-center text-gray-400 shadow-lg">
           Sin jugadores para este filtro.
         </div>
-      ) : ranked.map(p => {
+      ) : ranked.map((p, index) => {
         const stats = getPlayerStats(p, matches);
         return (
-          <div key={p.id} className="glass-card" style={{
-            padding:14, marginBottom:8,
-            display:'grid', gridTemplateColumns:'40px 50px 1fr auto auto', gap:12, alignItems:'center',
-            border: p.rank <= 3 ? '1px solid rgba(0,255,151,0.3)' : undefined
-          }}>
-            <div style={{ fontFamily:'Audiowide', fontSize:16,
-              color: p.rank === 1 ? '#FFD700' : p.rank === 2 ? '#C0C0C0' : p.rank === 3 ? '#CD7F32' : '#00ff97',
-              textAlign:'center' }}>
+          <motion.div 
+            key={p.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+            className={`bg-mid-bg rounded-lg p-3.5 mb-2 flex items-center gap-3 shadow-lg ${p.rank <= 3 ? 'border border-brand-green/30' : 'border border-transparent'}`}
+          >
+            <div className={`font-audiowide text-base w-10 text-center ${p.rank === 1 ? 'text-[#FFD700]' : p.rank === 2 ? 'text-[#C0C0C0]' : p.rank === 3 ? 'text-[#CD7F32]' : 'text-brand-green'}`}>
               #{p.rank}
             </div>
-            {p.foto
-              ? <img src={p.foto} alt="" style={{ width:40, height:40, borderRadius:'50%', objectFit:'cover' }} />
-              : <div style={{ width:40, height:40, borderRadius:'50%', background:'rgba(0,255,151,0.1)',
-                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🎾</div>
-            }
-            <div>
-              <div style={{ color:'#fff', fontWeight:'bold', fontSize:14 }}>{p.nombre}</div>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)' }}>
+            
+            {p.foto ? (
+              <img src={p.foto} alt="" className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-lg">
+                🎾
+              </div>
+            )}
+            
+            <div className="flex-1">
+              <div className="text-white font-bold text-sm">{p.nombre}</div>
+              <div className="text-[10px] text-gray-400 mt-0.5">
                 Cat. {p.categoria} · {stats.wins}V / {stats.losses}D · {stats.winRate}% win
-                {stats.streak > 0 && <span style={{ color:'#00ff97' }}>  🔥 {stats.streak}</span>}
-                {stats.streak < 0 && <span style={{ color:'#ff6b6b' }}>  ❄ {Math.abs(stats.streak)}</span>}
+                {stats.streak > 0 && <span className="text-brand-green ml-1">🔥 {stats.streak}</span>}
+                {stats.streak < 0 && <span className="text-[#ff6b6b] ml-1">❄ {Math.abs(stats.streak)}</span>}
               </div>
             </div>
-            <div style={{ fontFamily:'Audiowide', fontSize:18, color:'#00ff97' }}>
+            
+            <div className="font-audiowide text-lg text-brand-green">
               {p.rating}
             </div>
-            <div style={{ fontSize:10, padding:'3px 8px', borderRadius:5,
-              background:'rgba(0,255,151,0.1)', color:'#00ff97', fontFamily:'Audiowide',
-              letterSpacing:1 }}>
+            
+            <div className="text-[10px] px-2 py-1 rounded bg-brand-green/10 text-brand-green font-audiowide tracking-widest hidden sm:block">
               {p.categoria}
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
