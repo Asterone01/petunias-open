@@ -841,7 +841,18 @@ const AdminEditPlayers = ({ players, onUpdatePlayer }) => {
   return (
     <div>
       <h2 style={{ color: '#00ff97', fontFamily: 'Audiowide', marginBottom: 24, fontSize: 20 }}>Panel de Edición (Administradores)</h2>
-      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+      {players.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-20 bg-dark-bg border border-gray-800 rounded-2xl"
+        >
+          <div className="text-4xl mb-3 opacity-50">👥</div>
+          <div className="text-text-muted text-lg">Aún no hay jugadores registrados</div>
+          <div className="text-sm text-gray-500 mt-2">Agrega el primer jugador para comenzar</div>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {players.map((p, index) => (
           <motion.div 
             key={p.id} 
@@ -873,6 +884,7 @@ const AdminEditPlayers = ({ players, onUpdatePlayer }) => {
           </motion.div>
         ))}
       </div>
+      )}
     </div>
   );
 };
@@ -910,6 +922,7 @@ function App() {
   const [showAdmin, setShowAdmin] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking');
+  const [userRole, setUserRole] = React.useState('admin'); // 'admin' | 'player'
 
   // Cargar jugadores al iniciar
  React.useEffect(() => {
@@ -1094,18 +1107,16 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
 
   if (!playersLoaded) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: 20
-      }}>
-        <BallIcon size={64} />
-        <div style={{ color: '#00ff97', fontFamily: 'Audiowide', fontSize: 14 }}>
-          Cargando PETUNIAS OPEN...
-        </div>
+      <div className="min-h-screen flex items-center justify-center flex-col bg-dark-bg">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center justify-center min-h-[50vh]"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-green"></div>
+          <div className="text-text-muted mt-4 tracking-widest text-sm uppercase">Cargando...</div>
+        </motion.div>
       </div>
     );
   }
@@ -1142,49 +1153,28 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
                 Pre-Alpha 1.10
               </span>
             </div>
-            {/* 🚀 BOTÓN DE RESCATE TEMPORAL */}
-            <button 
-             onClick={async () => {
-    alert("Iniciando carga inteligente...");
-    const localPlayers = JSON.parse(localStorage.getItem('petunias-players') || '[]');
-    if(localPlayers.length === 0) return alert("No hay jugadores locales.");
-    
-    try {
-        for(let p of localPlayers) {
-            // Solo enviamos los campos básicos que sabemos que funcionan
-            // Si quieres enviar más, asegúrate de que existan en Supabase
-            const { error } = await db.from('players').upsert(p);
             
-            if (error) {
-                console.warn("Error con un jugador, intentando sin 'stats'...", error);
-                // Si falla por 'stats', lo quitamos y volvemos a intentar
-                const { id, created_at, stats, ...cleanPlayer } = p;
-                await db.from('players').upsert(cleanPlayer);
-            }
-        }
-        alert("¡POR FIN! Revisa Supabase y tu celular ahora.");
-    } catch (error) {
-        console.error("Error crítico:", error);
-        alert("Algo salió mal: " + error.message);
-    }
-}}
+            {/* Toggle Role Button (Dev/Test) */}
+            <button 
+              onClick={() => setUserRole(prev => prev === 'admin' ? 'player' : 'admin')}
+              className="bg-brand-green/20 border border-brand-green/40 text-brand-green px-3 py-1 rounded-full text-xs font-audiowide uppercase tracking-wider hover:bg-brand-green/30 transition-colors ml-4"
+              title="Alternar vista de Administrador / Jugador"
             >
-              🚀 FORZAR SUBIDA A SUPABASE
+              Rol: {userRole}
             </button>
-
             {/* User area */}
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               {/* Sync button - visible when online */}
               {dbStatus === 'online' && (
                 <button onClick={handleSync}
-                  className="rounded-full px-4 py-2 bg-brand-green/10 border border-brand-green/25 text-brand-green text-[10px] font-audiowide uppercase tracking-widest hover:bg-brand-green/20 transition-colors">
+                  className="hidden md:flex rounded-full px-4 py-2 bg-brand-green/10 border border-brand-green/25 text-brand-green text-[10px] font-audiowide uppercase tracking-widest hover:bg-brand-green/20 transition-colors">
                   🔄 Sync
                 </button>
               )}
               
               {isAdmin && (
                 <button onClick={()=>setShowAdmin(true)}
-                  className="rounded-full px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[10px] font-audiowide uppercase tracking-widest hover:bg-yellow-500/20 transition-colors">⚙ Admin</button>
+                  className="hidden md:flex rounded-full px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-[10px] font-audiowide uppercase tracking-widest hover:bg-yellow-500/20 transition-colors">⚙ Admin</button>
               )}
               {currentUser ? (
                 <button onClick={()=>setShowProfile(true)}
@@ -1246,6 +1236,7 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-5 py-8">
         {tab === TABS.DASHBOARD && <DashboardView players={players} matches={matches}
                                      tournaments={tournaments} currentUser={currentUser}
+                                     userRole={userRole}
                                      onGoTab={goTab} />}
         {tab === TABS.NEWS     && <NewsSection currentUser={currentUser} />}
         {tab === TABS.RANKING  && <RankingView players={players} matches={matches} />}
@@ -1264,10 +1255,7 @@ const handleUpdatePlayerStats = async (updatedPlayer) => {
       </main>
 
       {/* ── Footer ── */}
-      <footer style={{ textAlign:'center', padding:'20px',
-        color:'rgba(0,255,151,0.2)', fontSize:10,
-        textTransform:'uppercase', letterSpacing:4,
-        fontFamily:'Audiowide', borderTop:'1px solid rgba(0,255,151,0.06)' }}>
+      <footer className="border-t border-gray-800 bg-nav-bg mt-auto py-8 px-6 text-center text-text-muted text-xs">
         PETUNIAS OPEN © 2025 · Tennis Player Analysis Platform
       </footer>
 

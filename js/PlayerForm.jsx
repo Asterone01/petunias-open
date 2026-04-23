@@ -28,60 +28,58 @@ function PlayerForm({ onAdd }) {
   const chartData = getChartData(form);
 
   return (
-    <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:32 }}>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
-
+    <motion.form 
+      initial={{ opacity: 0, scale: 0.95 }} 
+      animate={{ opacity: 1, scale: 1 }} 
+      transition={{ duration: 0.2 }}
+      onSubmit={handleSubmit} 
+      className="bg-mid-bg p-8 rounded-2xl border border-gray-800 shadow-2xl w-full max-w-5xl mx-auto flex flex-col gap-8"
+    >
+      <h2 className="text-brand-green font-audiowide text-2xl mb-2 text-center md:text-left">Agregar Nuevo Jugador</h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* LEFT */}
-        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+        <div className="flex flex-col gap-6">
           {/* Photo */}
-          <div className="glass-card" style={{ padding:24 }}>
-            <div className="label-neon">Foto del jugador</div>
+          <div className="bg-dark-bg/50 border border-gray-800 rounded-xl p-6">
+            <label className="text-sm font-medium text-text-muted mb-3 block">Foto del jugador</label>
             {form.fotoPreview ? (
-              <div style={{ position:'relative', marginBottom:12 }}>
-                <img src={form.fotoPreview} alt="preview" style={{
-                  width:'100%', height:220, objectFit:'cover',
-                  borderRadius:10, border:'2px solid #00ff97'
-                }}/>
+              <div className="relative mb-3">
+                <img src={form.fotoPreview} alt="preview" className="w-full h-56 object-cover rounded-xl border-2 border-brand-green" />
                 <button type="button" onClick={() => { set('foto',null); set('fotoPreview',null); }}
-                  style={{ position:'absolute',top:8,right:8, background:'#c0392b', color:'#fff',
-                    border:'none', borderRadius:6, padding:'4px 10px', cursor:'pointer', fontSize:12 }}>
+                  className="absolute top-2 right-2 bg-red-600 text-white border-none rounded-lg px-3 py-1.5 cursor-pointer text-xs font-semibold hover:bg-red-700 transition-colors">
                   ✕ Quitar
                 </button>
               </div>
             ) : (
-              <label style={{ display:'block', cursor:'pointer' }}>
-                <div style={{
-                  width:'100%', height:220, border:'2px dashed rgba(0,255,151,0.4)',
-                  borderRadius:10, display:'flex', flexDirection:'column',
-                  alignItems:'center', justifyContent:'center', marginBottom:12,
-                  background:'rgba(0,255,151,0.03)', transition:'all .2s'
-                }}>
-                  <div style={{ fontSize:36, marginBottom:8, opacity:.5 }}>📷</div>
-                  <div style={{ color:'rgba(0,255,151,0.5)', fontSize:13, textTransform:'uppercase', letterSpacing:2 }}>
+              <label className="block cursor-pointer">
+                <div className="w-full h-56 border-2 border-dashed border-brand-green/40 rounded-xl flex flex-col items-center justify-center mb-3 bg-brand-green/5 hover:bg-brand-green/10 transition-colors">
+                  <div className="text-4xl mb-2 opacity-50">📷</div>
+                  <div className="text-brand-green/50 text-xs uppercase tracking-widest font-semibold">
                     Subir foto
                   </div>
                 </div>
-                <input type="file" accept="image/*" onChange={handlePhoto} style={{ display:'none' }}/>
+                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
               </label>
             )}
           </div>
 
           {/* Basic info */}
-          <div className="glass-card" style={{ padding:24, display:'flex', flexDirection:'column', gap:16 }}>
+          <div className="bg-dark-bg/50 border border-gray-800 rounded-xl p-6 flex flex-col gap-5">
             <div>
-              <div className="label-neon">Nombre</div>
-              <input className="inp" type="text" value={form.nombre}
+              <label className="text-sm font-medium text-text-muted mb-1.5 block">Nombre</label>
+              <input className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all font-bold" type="text" value={form.nombre}
                 onChange={e => set('nombre', e.target.value)} placeholder="Nombre del jugador" />
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="label-neon">Edad</div>
-                <input className="inp" type="number" value={form.edad}
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Edad</label>
+                <input className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" type="number" value={form.edad}
                   onChange={e => set('edad', e.target.value)} placeholder="Edad" min={5} max={99}/>
               </div>
               <div>
-                <div className="label-neon">Género</div>
-                <select className="inp" value={form.genero} onChange={e => set('genero', e.target.value)}>
+                <label className="text-sm font-medium text-text-muted mb-1.5 block">Género</label>
+                <select className="w-full bg-dark-bg border border-gray-700 text-white rounded-lg px-4 py-2.5 focus:border-brand-green focus:ring-1 focus:ring-brand-green focus:outline-none transition-all" value={form.genero} onChange={e => set('genero', e.target.value)}>
                   <option value="M">Masculino</option>
                   <option value="F">Femenino</option>
                   <option value="O">Otro</option>
@@ -89,12 +87,12 @@ function PlayerForm({ onAdd }) {
               </div>
             </div>
             <div>
-              <div className="label-neon">Categoría</div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
+              <label className="text-sm font-medium text-text-muted mb-1.5 block">Categoría</label>
+              <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map(cat => (
                   <button key={cat} type="button"
                     onClick={() => set('categoria', cat)}
-                    className={form.categoria === cat ? 'cat-btn active' : 'cat-btn'}>
+                    className={`px-4 py-2 rounded-lg text-xs font-audiowide uppercase tracking-wider transition-colors ${form.categoria === cat ? 'bg-brand-green text-dark-bg' : 'bg-gray-800 text-text-muted hover:bg-gray-700'}`}>
                     {cat}
                   </button>
                 ))}
@@ -104,27 +102,27 @@ function PlayerForm({ onAdd }) {
         </div>
 
         {/* RIGHT */}
-        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          <div className="glass-card" style={{ padding:24, display:'flex', justifyContent:'center' }}>
+        <div className="flex flex-col gap-6">
+          <div className="bg-dark-bg/50 border border-gray-800 rounded-xl p-6 flex justify-center">
             <ProgressCircle rating={rating} size="large" />
           </div>
 
-          <div className="glass-card" style={{ padding:24 }}>
-            <div className="label-neon" style={{ marginBottom:16 }}>Atributos</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <div className="bg-dark-bg/50 border border-gray-800 rounded-xl p-6">
+            <label className="text-sm font-medium text-text-muted mb-4 block border-b border-gray-700 pb-2">Atributos</label>
+            <div className="flex flex-col gap-4">
               {ATTRIBUTES.map(attr => (
                 <div key={attr.key}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                    <span style={{ fontSize:13, display:'flex', gap:8, alignItems:'center', color:'rgba(255,255,255,0.85)' }}>
-                      <span style={{ fontSize:16 }}>{attr.icon}</span> {attr.name}
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm flex gap-2 items-center text-gray-300">
+                      <span className="text-lg">{attr.icon}</span> {attr.name}
                     </span>
-                    <span style={{ color:'#00ff97', fontWeight:700, fontFamily:'Audiowide', fontSize:14 }}>
+                    <span className="text-brand-green font-bold font-audiowide text-sm">
                       {form[attr.key]}
                     </span>
                   </div>
                   <input type="range" min={1} max={10} value={form[attr.key]}
                     onChange={e => set(attr.key, parseInt(e.target.value))}
-                    className="slider" />
+                    className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-brand-green" />
                 </div>
               ))}
             </div>
@@ -133,19 +131,19 @@ function PlayerForm({ onAdd }) {
       </div>
 
       {/* Radar */}
-      <div className="glass-card" style={{ padding:28 }}>
-        <div className="label-neon" style={{ marginBottom:8, textAlign:'center' }}>Radar de Rendimiento</div>
+      <div className="bg-dark-bg/50 border border-gray-800 rounded-xl p-6">
+        <label className="text-sm font-medium text-text-muted mb-2 block text-center uppercase tracking-widest">Radar de Rendimiento</label>
         <RadarChartComponent data={chartData} />
       </div>
 
       {/* Submit */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-        <button type="submit" className="btn-neon">✓ Guardar Jugador</button>
-        <button type="button" className="btn-outline" onClick={() =>
+      <div className="flex gap-4 mt-4 justify-end border-t border-gray-800 pt-6">
+        <button type="button" className="text-text-muted hover:text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors" onClick={() =>
           setForm({ nombre:'', edad:'', genero:'M', categoria:'C', foto:null, fotoPreview:null, ...initAttrs() })
         }>↺ Resetear</button>
+        <button type="submit" className="bg-brand-green text-dark-bg font-semibold rounded-lg px-8 py-3 text-sm hover:bg-brand-teal transition-colors">✓ Guardar Jugador</button>
       </div>
-    </form>
+    </motion.form>
   );
 }
 
