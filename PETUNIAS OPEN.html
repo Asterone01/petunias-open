@@ -810,6 +810,7 @@
   <script type="text/babel" src="js/DashboardView.jsx"></script>
   <script type="text/babel" src="js/AuthView.jsx"></script>
   <script type="text/babel" src="js/NewsSection.jsx"></script>
+  <script type="text/babel" src="js/NewsFeed.jsx"></script>
   <script type="text/babel" src="js/AdminPanel.jsx"></script>
 
   <script type="text/babel">
@@ -1277,6 +1278,9 @@
         const loaded = await getPlayers();
         setPlayers(loaded);
       };
+
+      // Exponer currentUser globalmente para que DashboardView → NewsFeed lo consuma
+      window.__dashboardCurrentUser = currentUser;
 
       if (sessionLoading || !playersLoaded) {
         return (

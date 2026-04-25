@@ -129,6 +129,11 @@ function DashboardView({ players, matches, userRole }) {
         >
           {adminOrder.map(id => adminWidgets[id])}
         </Reorder.Group>
+
+        {/* ── Feed en tiempo real ── */}
+        <div className="bg-mid-bg border border-gray-800 rounded-2xl p-6 shadow-xl">
+          {typeof NewsFeed === 'function' && <NewsFeed currentUser={window.__dashboardCurrentUser} />}
+        </div>
       </div>
     );
   }
@@ -218,6 +223,11 @@ function DashboardView({ players, matches, userRole }) {
       >
         {playerOrder.map(id => playerWidgets[id])}
       </Reorder.Group>
+
+      {/* ── Feed en tiempo real ── */}
+      <div className="bg-mid-bg border border-gray-800 rounded-2xl p-6 shadow-xl">
+        {typeof NewsFeed === 'function' && <NewsFeed currentUser={window.__dashboardCurrentUser} />}
+      </div>
     </div>
   );
 }

@@ -1,63 +1,30 @@
-// ─── AuthView: Full-screen Supabase Auth (Login / Signup) ─────────────────────
-// Replaces the old localStorage-based AuthModal with real Supabase Auth.
-// Blocks the entire UI until the user has a valid session.
+// ─── AuthView: Full-screen Supabase Auth (Login Only) ──────────────────────────
+// Sign-up is restricted: only Admin can create new accounts from the Admin Panel.
 
 function AuthView({ onSession }) {
-  const [mode, setMode] = React.useState('login'); // 'login' | 'register'
-  const [form, setForm] = React.useState({ email: '', nombre: '', password: '', confirm: '' });
+  const [form, setForm] = React.useState({ email: '', password: '' });
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const [success, setSuccess] = React.useState('');
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        // ── Sign In ──
-        const { data, error: authError } = await window.db.auth.signInWithPassword({
-          email: form.email.trim(),
-          password: form.password,
-        });
-        if (authError) throw authError;
-        // onAuthStateChange will fire and App will update session
-      } else {
-        // ── Sign Up ──
-        if (!form.nombre.trim()) { setError('Ingresa tu nombre.'); setLoading(false); return; }
-        if (form.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); setLoading(false); return; }
-        if (form.password !== form.confirm) { setError('Las contraseñas no coinciden.'); setLoading(false); return; }
-
-        const { data, error: authError } = await window.db.auth.signUp({
-          email: form.email.trim(),
-          password: form.password,
-          options: {
-            data: { nombre: form.nombre.trim() }
-          }
-        });
-        if (authError) throw authError;
-
-        // Check if email confirmation is required
-        if (data?.user?.identities?.length === 0) {
-          setError('Ya existe una cuenta con ese email.');
-        } else if (data?.session) {
-          // Auto-confirmed — session fires via listener
-        } else {
-          setSuccess('¡Cuenta creada! Revisa tu email para confirmar tu cuenta.');
-        }
-      }
+      const { data, error: authError } = await window.db.auth.signInWithPassword({
+        email: form.email.trim(),
+        password: form.password,
+      });
+      if (authError) throw authError;
+      // onAuthStateChange will fire and App will update session
     } catch (err) {
       console.error('Auth error:', err);
-      // Translate common Supabase errors to Spanish
       const msg = err.message || 'Error desconocido';
       if (msg.includes('Invalid login credentials')) setError('Credenciales incorrectas. Verifica tu email y contraseña.');
       else if (msg.includes('Email not confirmed')) setError('Tu email no ha sido confirmado. Revisa tu bandeja de entrada.');
-      else if (msg.includes('User already registered')) setError('Ya existe una cuenta con ese email.');
-      else if (msg.includes('Password should be')) setError('La contraseña debe tener al menos 6 caracteres.');
       else setError(msg);
     } finally {
       setLoading(false);
@@ -139,17 +106,6 @@ function AuthView({ onSession }) {
           background-size: 200% 100%;
           animation: shimmer 1.5s infinite;
         }
-        .auth-tab {
-          padding: 11px;
-          border: none;
-          cursor: pointer;
-          font-family: 'Audiowide', monospace;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          transition: all 0.25s ease;
-          flex: 1;
-        }
       `}</style>
 
       {/* Logo */}
@@ -166,7 +122,7 @@ function AuthView({ onSession }) {
       {/* Card */}
       <div className="auth-card" style={{ padding: '40px 32px 32px' }}>
         {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             fontFamily: 'Audiowide', fontSize: 20, color: '#fff',
             textTransform: 'uppercase', letterSpacing: 3, marginBottom: 6,
@@ -179,39 +135,16 @@ function AuthView({ onSession }) {
           </div>
         </div>
 
-        {/* Mode Toggle */}
+        {/* Acceso label */}
         <div style={{
-          display: 'flex', borderRadius: 12, overflow: 'hidden',
-          border: '1px solid rgba(0,255,151,0.15)', marginBottom: 28,
-          background: 'rgba(0,0,0,0.3)',
+          textAlign: 'center', marginBottom: 24,
+          fontSize: 12, color: 'rgba(255,255,255,0.4)',
+          textTransform: 'uppercase', letterSpacing: 2,
         }}>
-          {['login', 'register'].map(m => (
-            <button
-              key={m}
-              className="auth-tab"
-              onClick={() => { setMode(m); setError(''); setSuccess(''); }}
-              style={{
-                background: mode === m ? 'rgba(0,255,151,0.15)' : 'transparent',
-                color: mode === m ? '#00ff97' : 'rgba(255,255,255,0.35)',
-                borderBottom: mode === m ? '2px solid #00ff97' : '2px solid transparent',
-              }}
-            >
-              {m === 'login' ? '🔑 Ingresar' : '✦ Registrarse'}
-            </button>
-          ))}
+          🔑 Acceso al Sistema
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {mode === 'register' && (
-            <div>
-              <label style={{ display: 'block', fontSize: 10, color: '#00ff97', fontFamily: 'Audiowide', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
-                Nombre
-              </label>
-              <input className="auth-input" type="text" value={form.nombre}
-                onChange={e => set('nombre', e.target.value)} placeholder="Tu nombre completo" required />
-            </div>
-          )}
-
           <div>
             <label style={{ display: 'block', fontSize: 10, color: '#00ff97', fontFamily: 'Audiowide', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
               Email
@@ -228,16 +161,6 @@ function AuthView({ onSession }) {
               onChange={e => set('password', e.target.value)} placeholder="••••••••" required />
           </div>
 
-          {mode === 'register' && (
-            <div>
-              <label style={{ display: 'block', fontSize: 10, color: '#00ff97', fontFamily: 'Audiowide', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
-                Confirmar Contraseña
-              </label>
-              <input className="auth-input" type="password" value={form.confirm}
-                onChange={e => set('confirm', e.target.value)} placeholder="••••••••" required />
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <div style={{
@@ -249,41 +172,15 @@ function AuthView({ onSession }) {
             </div>
           )}
 
-          {/* Success Message */}
-          {success && (
-            <div style={{
-              padding: '12px 16px', borderRadius: 10,
-              background: 'rgba(0,255,151,0.08)', border: '1px solid rgba(0,255,151,0.25)',
-              color: '#00ff97', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <span>✓</span> {success}
-            </div>
-          )}
-
           <button type="submit" className="auth-submit" disabled={loading} style={{ marginTop: 4 }}>
-            {loading ? '...' : mode === 'login' ? '→ Iniciar Sesión' : '✓ Crear Cuenta'}
+            {loading ? '...' : '→ Iniciar Sesión'}
           </button>
         </form>
 
-        {/* Bottom helper */}
-        {mode === 'login' && (
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-            ¿No tenés cuenta?{' '}
-            <span onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
-              style={{ color: '#00ff97', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>
-              Registrate
-            </span>
-          </div>
-        )}
-        {mode === 'register' && (
-          <div style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-            ¿Ya tenés cuenta?{' '}
-            <span onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-              style={{ color: '#00ff97', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>
-              Ingresá
-            </span>
-          </div>
-        )}
+        {/* Info note */}
+        <div style={{ marginTop: 24, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', lineHeight: 1.6 }}>
+          ¿No tenés cuenta? Contactá al administrador para que te invite al sistema.
+        </div>
       </div>
 
       {/* Footer note */}
